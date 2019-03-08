@@ -1,6 +1,12 @@
 function await -a title -d "Await last background job with a spinner"
   count (jobs) >/dev/null
     or return 1
+  
+  function __on_exit --on-job-exit %self
+    __await_cleanup
+    __await_kill_children
+    functions -e __on_exit
+  end
 
   set -l index 1
   test (count $argv) -gt 1
@@ -33,7 +39,7 @@ function await -a title -d "Await last background job with a spinner"
       or set index (math $index + 1)
     sleep 0.1
   end
-
+  functions -e __on_exit
   __await_cleanup
 end
 
@@ -44,4 +50,10 @@ function __await_cleanup
   tput cnorm
   stty echo
   trap INT
+end
+
+function __await_kill_children
+  for x in (jobs -p | grep -v 'Process')
+    kill $x
+  end
 end
