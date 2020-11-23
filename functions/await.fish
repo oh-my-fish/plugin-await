@@ -1,11 +1,12 @@
 function await -a title -d "Await last background job with a spinner"
   count (jobs) >/dev/null
     or return 1
-  
-  function __on_exit --on-job-exit %self
+
+
+  function on_premature_exit --on-job-exit %self
+    functions -e on_premature_exit
     __await_cleanup
     __await_kill_children
-    functions -e __on_exit
   end
 
   set -l index 1
@@ -26,12 +27,8 @@ function await -a title -d "Await last background job with a spinner"
                      "<⋉      "
   tput civis
   stty -echo
-  jobs -l | read -l job tail
 
-  status --is-interactive
-    and trap __await_cleanup INT
-
-  while contains $job (jobs | cut -d\t -f1)
+  while count (jobs) >/dev/null
     printf "\r$theme[$index] $title"
     tput el
     test $index -eq (count $theme)
@@ -39,7 +36,7 @@ function await -a title -d "Await last background job with a spinner"
       or set index (math $index + 1)
     sleep 0.1
   end
-  functions -e __on_exit
+  functions -e on_premature_exit
   __await_cleanup
 end
 
